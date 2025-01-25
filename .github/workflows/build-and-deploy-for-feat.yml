@@ -33,11 +33,11 @@ jobs:
           echo "TAG=$tag" >> "$GITHUB_ENV"
 
       - name: Modify Base URL in HTML
-        # DOMAIN_URL="lovetavern.ai"
+        # WEB_DOMAIN="lovetavern.ai"
         run: |
-          DOMAIN_URL="https://${{ vars.DOMAIN }}"
-          sed -i.bak "s|<base href=\"/\">|<base href=\"${DOMAIN_URL}\">|g" public/index.html && rm public/index.html.bak
-          sed -i.bak "s|<base href=\"/\">|<base href=\"${DOMAIN_URL}\">|g" public/login.html && rm public/login.html.bak
+          WEB_DOMAIN="https://${{ vars.WEB_DOMAIN }}"
+          sed -i.bak "s|<base href=\"/\">|<base href=\"${WEB_DOMAIN}\">|g" public/index.html && rm public/index.html.bak
+          sed -i.bak "s|<base href=\"/\">|<base href=\"${WEB_DOMAIN}\">|g" public/login.html && rm public/login.html.bak
 
       - name: Upload PUBLIC folder to S3
         run: |
