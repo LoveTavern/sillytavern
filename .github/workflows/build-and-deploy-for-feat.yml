@@ -31,6 +31,18 @@ jobs:
           image=$(echo ${{ github.repository }} | sed 's/LoveTavern\///')
           echo "IMAGE_NAME=$image" >> "$GITHUB_ENV"
           echo "TAG=$tag" >> "$GITHUB_ENV"
+
+      - name: Modify Base URL in HTML
+        # DOMAIN_URL="lovetavern.ai"
+        run: |
+          DOMAIN_URL="https://${{ vars.DOMAIN }}"
+          sed -i.bak "s|<base href=\"/\">|<base href=\"${DOMAIN_URL}\">|g" public/index.html && rm public/index.html.bak
+          sed -i.bak "s|<base href=\"/\">|<base href=\"${DOMAIN_URL}\">|g" public/login.html && rm public/login.html.bak
+
+      - name: Upload PUBLIC folder to S3
+        run: |
+          aws s3 cp public s3://${{ vars.AWS_S3_BUCKET }}/public --recursive
+
       - name: Cache Node.js modules
         uses: actions/cache@v4
         with:
