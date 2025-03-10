@@ -1,36 +1,36 @@
-FROM node:19.1.0-alpine3.16
+FROM node:lts-alpine3.19
 
 # Arguments
 ARG APP_HOME=/home/node/app
 
 # Install system dependencies
-RUN apk add gcompat tini
-
-# Ensure proper handling of kernel signals
-ENTRYPOINT [ "tini", "--" ]
+RUN apk add gcompat tini git
 
 # Create app directory
 WORKDIR ${APP_HOME}
 
+# Set NODE_ENV to production
+ENV NODE_ENV=production
+
 # Install app dependencies
-COPY package*.json ./
+COPY package*.json post-install.js ./
 RUN \
   echo "*** Install npm packages ***" && \
-  npm install && npm cache clean --force
+  npm i --no-audit --no-fund --loglevel=error --no-progress --omit=dev && npm cache clean --force
 
 # Bundle app source
 COPY . ./
 
 # Copy default chats, characters and user avatars to <folder>.default folder
 RUN \
-  IFS="," RESOURCES="characters,chats,groups,group chats,User Avatars,worlds,settings.json" && \
-  \
-  echo "*** Store default $RESOURCES in <folder>.default ***" && \
-  for R in $RESOURCES; do mv "public/$R" "public/$R.default"; done && \
-  \
-  echo "*** Create symbolic links to config directory ***" && \
-  for R in $RESOURCES; do ln -s "../config/$R" "public/$R"; done && \
-  mkdir "config"
+  rm -f "config.yaml" || true && \
+  ln -s "./config/config.yaml" "config.yaml" || true && \
+  mkdir "config" || true
+
+# Pre-compile public libraries
+RUN \
+  echo "*** Run Webpack ***" && \
+  node "./docker/build-lib.js"
 
 # Cleanup unnecessary files
 RUN \
@@ -42,6 +42,10 @@ RUN \
   echo "*** Convert line endings to Unix format ***" && \
   dos2unix "./docker-entrypoint.sh"
 
+# Fix extension repos permissions
+RUN git config --global --add safe.directory "*"
+
 EXPOSE 8000
 
-CMD [ "./docker-entrypoint.sh" ]
+# Ensure proper handling of kernel signals
+ENTRYPOINT ["tini", "--", "./docker-entrypoint.sh"]
